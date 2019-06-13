@@ -283,7 +283,7 @@ public class GetMovieDetailResponseData {
         this.voteCount = voteCount;
     }
 
-    private class Genre {
+    public class Genre {
 
         @SerializedName("id")
         @Expose

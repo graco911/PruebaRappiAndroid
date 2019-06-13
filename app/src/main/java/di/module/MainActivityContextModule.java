@@ -7,7 +7,7 @@ import com.prueba.rappi.activities.MainActivity;
 import dagger.Module;
 import dagger.Provides;
 import di.qualifier.ActivityContext;
-import di.qualifier.di.scopes.ActivityScope;
+import di.scopes.ActivityScope;
 
 @Module
 public class MainActivityContextModule {

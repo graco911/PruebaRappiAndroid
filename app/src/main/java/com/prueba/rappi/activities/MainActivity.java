@@ -3,22 +3,20 @@ package com.prueba.rappi.activities;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.View;
-import android.support.v4.view.GravityCompat;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.view.MenuItem;
-import android.support.design.widget.NavigationView;
-import android.support.v4.widget.DrawerLayout;
-
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import com.prueba.rappi.R;
@@ -38,7 +36,6 @@ import enumerators.EMovieType;
 import helpers.Utils;
 import interfaces.IServices;
 import models.GetMovieResponseData;
-import okhttp3.internal.Util;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -68,14 +65,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @ActivityContext
     public Context activityContext;
 
+
     private boolean isbBusy;
     private int currentPageTopRated = 1;
     private int currentPageUpcoming = 1;
     private int currentPagePopular = 1;
 
-    MainActivityComponent mainActivityComponent;
-
     private MultiSnapRecyclerView listPopular, listUpcoming, listTopRated;
+    private MainActivityComponent mainActivityComponent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,7 +97,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
-
 
         ApplicationComponent applicationComponent = MovieApplication.get(this).getApplicationComponent();
         mainActivityComponent = DaggerMainActivityComponent.builder()
@@ -267,7 +263,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void launchIntent(int movieId)
     {
-        Toast.makeText(mContext, "RecyclerView Row selected", Toast.LENGTH_SHORT).show();
-        startActivity(new Intent(activityContext, MovieDetailActivity.class).putExtra("MovieId", movieId));
+        Toast.makeText(this, "RecyclerView Row selected", Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(this, MovieDetailActivity.class).putExtra("MovieId", movieId));
     }
 }

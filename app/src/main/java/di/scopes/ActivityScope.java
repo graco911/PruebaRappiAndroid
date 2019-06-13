@@ -1,4 +1,4 @@
-package di.qualifier.di.scopes;
+package di.scopes;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

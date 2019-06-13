@@ -1,52 +1,85 @@
 package com.prueba.rappi.activities;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatRatingBar;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.prueba.rappi.R;
 import com.squareup.picasso.Picasso;
+import com.takusemba.multisnaprecyclerview.MultiSnapRecyclerView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
+import adapters.MoviesAdapter;
 import adapters.TrailersAdapter;
 import di.component.ApplicationComponent;
-import di.component.DaggerMovieDetailComponent;
-import di.component.MovieDetailComponent;
+import di.component.DaggerMovieDetailActivityComponent;
+import di.component.MovieDetailActivityComponent;
+import di.module.MovieDetailContextModule;
+import di.qualifier.ActivityContext;
 import di.qualifier.ApplicationContext;
 import helpers.Utils;
 import interfaces.IServices;
 import models.GetMovieDetailResponseData;
+import models.GetMovieResponseData;
+import models.GetTrailersResponseData;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MovieDetailActivity extends AppCompatActivity implements TrailersAdapter.ClickListener {
+public class MovieDetailActivity extends AppCompatActivity implements TrailersAdapter.ClickListener, MoviesAdapter.ClickListener {
 
     private Toolbar appbar;
     private ImageView imgToolbar;
     private ImageView imageViewPoster;
     private TextView textTitle;
     private TextView textYear;
+    private TextView textGenres;
     private AppCompatRatingBar ratingMovie;
     private TextView textDescription;
+    private MultiSnapRecyclerView listTrailers, listSimilar;
+    private FloatingActionButton btnFab;
 
-    MovieDetailComponent movieDetailComponent;
+    @Inject
+    @Named("Similar")
+    public MoviesAdapter similarAdapter;
+
+    @Inject
+    @Named("Trailers")
+    public TrailersAdapter trailersAdapter;
+
+    @Inject
+    public IServices apiInterface;
 
     @Inject
     @ApplicationContext
     public Context mContext;
 
     @Inject
-    public IServices apiInterface;
+    @ActivityContext
+    public Context activityContext;
+
+    private MovieDetailActivityComponent movieDetailActivityComponent;
+    private int page = 1;
+    private boolean isbBusy;
+    private LinearLayoutManager layoutManagerSimilar;
+    private int movieid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,49 +93,151 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
         textYear = (TextView) findViewById(R.id.textYear);
         ratingMovie = (AppCompatRatingBar) findViewById(R.id.ratingMovie);
         textDescription = (TextView) findViewById(R.id.textDescription);
+        listTrailers = (MultiSnapRecyclerView) findViewById(R.id.listTrailers);
+        listSimilar = (MultiSnapRecyclerView) findViewById(R.id.listSimilars);
+        btnFab = (FloatingActionButton) findViewById(R.id.btnFab);
+        textGenres = (TextView) findViewById(R.id.textGenres);
 
         setSupportActionBar(appbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        int movieid = getIntent().getIntExtra("MovieId", 0);
+        movieid = getIntent().getIntExtra("MovieId", 0);
 
         ApplicationComponent applicationComponent = MovieApplication.get(this).getApplicationComponent();
-        movieDetailComponent = DaggerMovieDetailComponent.builder()
-                .applicationComponent(applicationComponent)
-                .build();
+        movieDetailActivityComponent = DaggerMovieDetailActivityComponent.builder()
+                .movieDetailContextModule(new MovieDetailContextModule(this))
+                .applicationComponent(applicationComponent).build();
 
-        movieDetailComponent.inject(this);
+        movieDetailActivityComponent.inject(this);
+
+        LinearLayoutManager layoutManagerTrailers = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        listTrailers.setLayoutManager(layoutManagerTrailers);
+        listTrailers.setAdapter(trailersAdapter);
+
+        layoutManagerSimilar = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        listSimilar = findViewById(R.id.listSimilars);
+        listSimilar.setLayoutManager(layoutManagerSimilar);
+        listSimilar.setAdapter(similarAdapter);
+
+        SetScrollListener();
 
         GetMovieDetail(movieid);
+
     }
 
-    private void GetMovieDetail(final int id) {
+    private void SetScrollListener() {
 
-        apiInterface.getMovieDetail(String.format("%s",id), Utils.API_KEY, Utils.LANGUAGE)
+        listSimilar.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                int totalItemCount = layoutManagerSimilar.getItemCount();
+                int visibleItemCount = layoutManagerSimilar.getChildCount();
+                int firstVisibleItem = layoutManagerSimilar.findFirstVisibleItemPosition();
+
+                if (firstVisibleItem + visibleItemCount >= totalItemCount / 2) {
+                    if (!isbBusy) {
+                        GetSimilarMovies(page + 1);
+                    }
+                }
+            }
+        });
+
+    }
+
+    private void GetSimilarMovies(int page) {
+
+        isbBusy = true;
+
+        apiInterface.getSimilars(String.valueOf(movieid), Utils.API_KEY, Utils.LANGUAGE, page)
+                .enqueue(new Callback<GetMovieResponseData>() {
+                    @Override
+                    public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response)
+                    {
+                        similarAdapter.setData(response.body().getResults());
+                    }
+
+                    @Override
+                    public void onFailure(Call<GetMovieResponseData> call, Throwable t)
+                    {
+
+                    }
+                });
+
+    }
+
+    private void GetMovieSimilar(int movieid) {
+
+        isbBusy = true;
+
+        apiInterface.getSimilars(String.valueOf(movieid), Utils.API_KEY, Utils.LANGUAGE, page)
+                .enqueue(new Callback<GetMovieResponseData>() {
+                    @Override
+                    public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response)
+                    {
+                        similarAdapter.setData(response.body().getResults());
+                    }
+
+                    @Override
+                    public void onFailure(Call<GetMovieResponseData> call, Throwable t)
+                    {
+
+                    }
+                });
+
+    }
+
+    private void GetTrailers(final int id)
+    {
+
+        apiInterface.getTrailers(String.format("%s", id), Utils.API_KEY, "en-US")
+                .enqueue(new Callback<GetTrailersResponseData>() {
+                    @Override
+                    public void onResponse(Call<GetTrailersResponseData> call, Response<GetTrailersResponseData> response)
+                    {
+                        if (response.body().getResults().size() > 0){
+                            trailersAdapter.setData(response.body().getResults());
+                        }
+
+                        GetMovieSimilar(id);
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<GetTrailersResponseData> call, Throwable t) {
+
+                    }
+                });
+
+    }
+
+    private void GetMovieDetail(final int id)
+    {
+
+        apiInterface.getMovieDetail(String.format("%s", id), Utils.API_KEY, Utils.LANGUAGE)
                 .enqueue(new Callback<GetMovieDetailResponseData>() {
                     @Override
                     public void onResponse(Call<GetMovieDetailResponseData> call, Response<GetMovieDetailResponseData> response) {
 
                         GetMovieDetailResponseData item = response.body();
 
-                        if (!item.getPosterPath().isEmpty()){
+                        if (!item.getPosterPath().isEmpty()) {
                             String urlMoviePoster = String.format("https://image.tmdb.org/t/p/w500/%s", item.getPosterPath());
                             Picasso.with(getApplicationContext()).load(urlMoviePoster).into(imageViewPoster);
-                        }else {
+                        } else {
                             imageViewPoster.setVisibility(View.INVISIBLE);
                         }
 
-                        if (!item.getBackdropPath().isEmpty()){
+                        if (!item.getBackdropPath().isEmpty()) {
                             String urlMovieBack = String.format("https://image.tmdb.org/t/p/w500/%s", item.getBackdropPath());
                             Picasso.with(getApplicationContext()).load(urlMovieBack).into(imgToolbar);
                         }
 
-                        if (!item.getTitle().isEmpty()){
+                        if (!item.getTitle().isEmpty()) {
                             textTitle.setText(response.body().getTitle());
                         }
 
-                        if (!item.getReleaseDate().isEmpty()){
+                        if (!item.getReleaseDate().isEmpty()) {
                             try {
                                 textYear.setText(new SimpleDateFormat("yyyy").format(Utils.GetDateFormat("yyyy").parse(item.getReleaseDate())));
                             } catch (ParseException e) {
@@ -110,19 +245,39 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                             }
                         }
 
-                        if (!item.getOverview().isEmpty()){
+                        if (!item.getOverview().isEmpty()) {
                             textDescription.setText(item.getOverview());
-                        }else{
+                        } else {
                             textDescription.setText("Sin descripción.");
                         }
 
-                        if (item.getVoteAverage() > 0){
+                        if (item.getVoteAverage() > 0) {
                             ratingMovie.setRating(Float.parseFloat(item.getVoteAverage().toString()) * .5f);
                         }
+                        if (item.getGenres().size() > 0){
+                            StringBuilder genres = new StringBuilder("");
+
+                            int count = 0;
+
+                            for (GetMovieDetailResponseData.Genre genre: item.getGenres())
+                            {
+                                count++;
+                                genres.append(genre.getName());
+
+                                if (count < item.getGenres().size()){
+                                    genres.append(",");
+                                }
+                            }
+
+                            textGenres.setText(genres);
+                        }
+
+                        GetTrailers(item.getId());
                     }
 
                     @Override
-                    public void onFailure(Call<GetMovieDetailResponseData> call, Throwable t) {
+                    public void onFailure(Call<GetMovieDetailResponseData> call, Throwable t)
+                    {
 
                     }
                 });
@@ -139,5 +294,25 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
+    }
+
+    @Override
+    public void launchIntent(String movieKey) {
+
+        Intent webIntent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse(String.format("https://www.youtube.com/watch?v=%s", movieKey)));
+        try
+        {
+            MovieDetailActivity.this.startActivity(webIntent);
+        } catch (ActivityNotFoundException ex)
+        {
+
+        }
+    }
+
+    @Override
+    public void launchIntent(int movieId) {
+        Toast.makeText(this, "RecyclerView Row selected", Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(this, MovieDetailActivity.class).putExtra("MovieId", movieId));
     }
 }

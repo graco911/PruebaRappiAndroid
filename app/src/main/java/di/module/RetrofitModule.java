@@ -2,7 +2,7 @@ package di.module;
 
 import dagger.Module;
 import dagger.Provides;
-import di.qualifier.di.scopes.ApplicationScope;
+import di.scopes.ApplicationScope;
 import helpers.Utils;
 import interfaces.IServices;
 import retrofit2.Retrofit;

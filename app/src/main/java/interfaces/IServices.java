@@ -7,6 +7,7 @@ import models.GetMovieResponseData;
 import models.GetRequestTokenData;
 import models.GetTrailersResponseData;
 import models.GetUserSessionIdData;
+import models.SetFavoriteMovieData;
 import models.SetRequestSessionData;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -47,7 +48,7 @@ public interface IServices {
     Call<GetAddFavoritesResponseData> setFavorite(
             @Path("account_id") String accountId,
             @Query("api_key") String apiKey,
-            @Query("session_id") String sessionId
+            @Body SetFavoriteMovieData favoriteMovieData
     );
 
     @GET("account/{account_id}/favorite/movies")
@@ -56,13 +57,22 @@ public interface IServices {
             @Query("api_key") String apiKey,
             @Query("session_id") String sessionId,
             @Query("language") String language,
-            @Query("sort_by") String page
+            @Query("sort_by") String sortBy
     );
 
-    @GET("account/{movie_id}/favorite/movies")
+    @GET("movie/{movie_id}/videos")
     Call<GetTrailersResponseData> getTrailers(
             @Path("movie_id") String movieId,
             @Query("api_key") String apiKey,
             @Query("language") String language
     );
+
+    @GET("movie/{movie_id}/similar")
+    Call<GetMovieResponseData> getSimilars(
+            @Path("movie_id") String movieId,
+            @Query("api_key") String apiKey,
+            @Query("language") String language,
+            @Query("page") int page
+    );
+
 }

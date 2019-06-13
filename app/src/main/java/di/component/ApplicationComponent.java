@@ -8,17 +8,17 @@ import dagger.Component;
 import di.module.ContextModule;
 import di.module.RetrofitModule;
 import di.qualifier.ApplicationContext;
-import di.qualifier.di.scopes.ApplicationScope;
+import di.scopes.ApplicationScope;
 import interfaces.IServices;
 
 @ApplicationScope
 @Component(modules = {ContextModule.class, RetrofitModule.class})
 public interface ApplicationComponent {
 
-    public IServices getApiInterface();
+    IServices getApiInterface();
 
     @ApplicationContext
-    public Context getContext();
+    Context getContext();
 
-    public void injectApplication(MovieApplication myApplication);
+    void injectApplication(MovieApplication movieApplication);
 }

@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class GetTrailersResponseData {
-    @SerializedName("id")
+
     @Expose
     private Integer id;
     @SerializedName("results")
@@ -30,6 +30,7 @@ public class GetTrailersResponseData {
     }
 
     public class Result {
+
         @SerializedName("id")
         @Expose
         private String id;

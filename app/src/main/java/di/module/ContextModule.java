@@ -5,7 +5,7 @@ import android.content.Context;
 import dagger.Module;
 import dagger.Provides;
 import di.qualifier.ApplicationContext;
-import di.qualifier.di.scopes.ApplicationScope;
+import di.scopes.ApplicationScope;
 
 @Module
 public class ContextModule {
@@ -22,3 +22,4 @@ public class ContextModule {
         return context;
     }
 }
+
