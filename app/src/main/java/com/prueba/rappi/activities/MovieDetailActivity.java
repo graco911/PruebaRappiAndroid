@@ -17,6 +17,7 @@ import java.text.SimpleDateFormat;
 
 import javax.inject.Inject;
 
+import adapters.TrailersAdapter;
 import di.component.ApplicationComponent;
 import di.component.DaggerMovieDetailComponent;
 import di.component.MovieDetailComponent;
@@ -28,7 +29,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MovieDetailActivity extends AppCompatActivity {
+public class MovieDetailActivity extends AppCompatActivity implements TrailersAdapter.ClickListener {
 
     private Toolbar appbar;
     private ImageView imgToolbar;

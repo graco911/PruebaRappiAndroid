@@ -5,6 +5,7 @@ import models.GetFavoritesMoviesResponseData;
 import models.GetMovieDetailResponseData;
 import models.GetMovieResponseData;
 import models.GetRequestTokenData;
+import models.GetTrailersResponseData;
 import models.GetUserSessionIdData;
 import models.SetRequestSessionData;
 import retrofit2.Call;
@@ -44,15 +45,24 @@ public interface IServices {
 
     @GET("account/{account_id}/favorite")
     Call<GetAddFavoritesResponseData> setFavorite(
+            @Path("account_id") String accountId,
             @Query("api_key") String apiKey,
             @Query("session_id") String sessionId
     );
 
     @GET("account/{account_id}/favorite/movies")
     Call<GetFavoritesMoviesResponseData> getFavorites(
+            @Path("account_id") String accountId,
             @Query("api_key") String apiKey,
             @Query("session_id") String sessionId,
             @Query("language") String language,
             @Query("sort_by") String page
+    );
+
+    @GET("account/{movie_id}/favorite/movies")
+    Call<GetTrailersResponseData> getTrailers(
+            @Path("movie_id") String movieId,
+            @Query("api_key") String apiKey,
+            @Query("language") String language
     );
 }
