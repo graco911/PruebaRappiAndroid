@@ -2,16 +2,16 @@
 **Prueba de Carlos Alberto Graniel Córdova**
 14/06/2019
 En esta aplicacion encontramos una arquitectura de tres capas
--La de persistencia compuesta por la implementacion de Inyeccion de dependencias con Dagger 2
--La de negocio que implementa una interfaz con las funciones a los metodos del API de TMDB
--Por ultimo la capa de presentacion que en la cual radican los layouts encargados de la interfaz de usuario.
+*La de persistencia compuesta por la implementacion de Inyeccion de dependencias con Dagger 2
+*La de negocio que implementa una interfaz con las funciones a los metodos del API de TMDB
+*Por ultimo la capa de presentacion que en la cual radican los layouts encargados de la interfaz de usuario.
 
 **he dividido las clases en paquetes**
--Dentro de activities se encuentran las activities
--La carpeta DI con los componentes, modulos, calificadores y ambitos para la inyeccion de dependencias con Dagger 2
--Un enumerador para distinguir entre los tipos de peliculas a mostrar
-.La carpeta helpers con codigo util
--Dentro de mi carpeta interfaces inclui una interfaz que implementa todas las funciones que utiliza Retrofit para la consulta del servicio web
+*Dentro de activities se encuentran las activities
+*La carpeta DI con los componentes, modulos, calificadores y ambitos para la inyeccion de dependencias con Dagger 2
+*Un enumerador para distinguir entre los tipos de peliculas a mostrar
+*La carpeta helpers con codigo util
+*Dentro de mi carpeta interfaces inclui una interfaz que implementa todas las funciones que utiliza Retrofit para la consulta del servicio web
 -Por ultimo mis modelos POJO se encuentran dentro de la clase models.
 
 El principio de responsabilidad indica que una clase debe tener una sola razon para cambiar,
