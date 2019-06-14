@@ -1,5 +1,6 @@
 package com.prueba.rappi.activities;
 
+import android.app.AlertDialog;
 import android.app.Presentation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -45,6 +46,7 @@ import di.component.MainActivityComponent;
 import di.module.MainActivityContextModule;
 import di.qualifier.ActivityContext;
 import di.qualifier.ApplicationContext;
+import dmax.dialog.SpotsDialog;
 import enumerators.EMovieType;
 import helpers.Utils;
 import interfaces.IServices;
@@ -94,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private View headerLayout;
     private Gson gson;
     private NavigationView navigationView;
+    private AlertDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +124,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         headerLayout = navigationView.getHeaderView(0);
 
         Utils.GetPrefsInstance(this);
+
+        dialog = new SpotsDialog.Builder()
+                .setContext(this)
+                .setMessage("Espere por favor....")
+                .setCancelable(false)
+                .build();
 
         ApplicationComponent applicationComponent = MovieApplication.get(this).getApplicationComponent();
         mainActivityComponent = DaggerMainActivityComponent.builder()
@@ -232,15 +241,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void GetMovies(EMovieType movieType, final MoviesAdapter adapter) {
 
+        dialog.show();
         apiInterface.getMovies(movieType.toString(), Utils.API_KEY, Utils.LANGUAGE, Utils.PAGE)
                 .enqueue(new Callback<GetMovieResponseData>() {
                     @Override
                     public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response) {
                         adapter.setData(response.body().getResults());
+                        dialog.dismiss();
                     }
 
                     @Override
                     public void onFailure(Call<GetMovieResponseData> call, Throwable t) {
+                        dialog.dismiss();
 
                     }
                 });
@@ -260,22 +272,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        return false;
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -289,6 +286,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 LoginUser();
                 break;
             case R.id.nav_favorites:
+                LaunchFavorites();
                 break;
             case R.id.nav_options:
                 break;
@@ -303,6 +301,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
+    private void LaunchFavorites() {
+        startActivity(new Intent(this, FavoritesActivity.class));
+    }
+
     private void LogoutUser() {
 
         Prefs.putString("UserData", "");
@@ -311,6 +313,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void LoginUser() {
+
+        dialog.show();
 
         apiInterface.getRequestToken(Utils.API_KEY)
                 .enqueue(new Callback<GetRequestTokenData>() {
@@ -375,12 +379,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                                     Prefs.putString("UserSession", response.body().getSessionId());
 
                                     GetUserData(response.body().getSessionId());
+                                    dialog.dismiss();
                                 }
                             }
 
                             @Override
                             public void onFailure(Call<GetUserSessionIdData> call, Throwable t) {
-
+                                dialog.dismiss();
                             }
                         });
             }
@@ -400,7 +405,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
                     @Override
                     public void onFailure(Call<GetResponseUserData> call, Throwable t) {
-
+                        dialog.dismiss();
                     }
                 });
 

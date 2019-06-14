@@ -1,10 +1,15 @@
 package com.prueba.rappi.activities;
 
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.customtabs.CustomTabsClient;
+import android.support.customtabs.CustomTabsIntent;
+import android.support.customtabs.CustomTabsServiceConnection;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityOptionsCompat;
@@ -37,11 +42,13 @@ import di.component.MovieDetailActivityComponent;
 import di.module.MovieDetailContextModule;
 import di.qualifier.ActivityContext;
 import di.qualifier.ApplicationContext;
+import dmax.dialog.SpotsDialog;
 import helpers.Utils;
 import interfaces.IServices;
 import models.GetAddFavoritesResponseData;
 import models.GetMovieDetailResponseData;
 import models.GetMovieResponseData;
+import models.GetRequestTokenData;
 import models.GetResponseUserData;
 import models.GetTrailersResponseData;
 import models.SetFavoriteMovieData;
@@ -87,6 +94,8 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
     private LinearLayoutManager layoutManagerSimilar;
     private int movieid;
     private Gson gson;
+    private CustomTabsServiceConnection connection;
+    private AlertDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,12 +129,18 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
 
         Utils.GetPrefsInstance(this);
         gson = new Gson();
+        dialog = new SpotsDialog.Builder()
+                .setContext(this)
+                .setMessage("Espere por favor....")
+                .setCancelable(false)
+                .build();
 
         btnFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
 
-                if (!Prefs.getString("UserData", "").isEmpty()){
+                dialog.show();
+                if (!Prefs.getString("UserData", "").isEmpty()) {
 
                     GetResponseUserData userData = gson.fromJson(Prefs.getString("UserData", ""), GetResponseUserData.class);
                     String sessionId = Prefs.getString("UserSession", "");
@@ -137,22 +152,22 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     apiInterface.setFavorite(String.valueOf(userData.getId()), Utils.API_KEY, sessionId, movieData)
                             .enqueue(new Callback<GetAddFavoritesResponseData>() {
                                 @Override
-                                public void onResponse(Call<GetAddFavoritesResponseData> call, Response<GetAddFavoritesResponseData> response)
-                                {
+                                public void onResponse(Call<GetAddFavoritesResponseData> call, Response<GetAddFavoritesResponseData> response) {
+                                    dialog.dismiss();
                                     Snackbar.make(view, response.body().getStatusMessage(), Snackbar.LENGTH_LONG)
                                             .setAction("Aceptar", null).show();
                                 }
 
                                 @Override
-                                public void onFailure(Call<GetAddFavoritesResponseData> call, Throwable t)
-                                {
-                                    if (t.getMessage().isEmpty())
-                                    {
-
-                                    }
-
+                                public void onFailure(Call<GetAddFavoritesResponseData> call, Throwable t) {
+                                    dialog.dismiss();
                                 }
                             });
+                }
+                else {
+                    dialog.dismiss();
+                    Snackbar.make(view, "No has iniciado sesión.", Snackbar.LENGTH_LONG)
+                            .setAction("Aceptar", null).show();
                 }
             }
         });
@@ -193,6 +208,7 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
 
     private void GetSimilarMovies(int page) {
 
+        dialog.show();
         isbBusy = true;
 
         apiInterface.getSimilars(String.valueOf(movieid), Utils.API_KEY, Utils.LANGUAGE, page)
@@ -201,12 +217,13 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response)
                     {
                         similarAdapter.setData(response.body().getResults());
+                        dialog.dismiss();
                     }
 
                     @Override
                     public void onFailure(Call<GetMovieResponseData> call, Throwable t)
                     {
-
+                        dialog.dismiss();
                     }
                 });
 
@@ -214,6 +231,7 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
 
     private void GetMovieSimilar(int movieid) {
 
+        dialog.dismiss();
         isbBusy = true;
 
         apiInterface.getSimilars(String.valueOf(movieid), Utils.API_KEY, Utils.LANGUAGE, page)
@@ -222,12 +240,13 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response)
                     {
                         similarAdapter.setData(response.body().getResults());
+                        dialog.dismiss();
                     }
 
                     @Override
                     public void onFailure(Call<GetMovieResponseData> call, Throwable t)
                     {
-
+                        dialog.dismiss();
                     }
                 });
 
@@ -235,7 +254,7 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
 
     private void GetTrailers(final int id)
     {
-
+        dialog.show();
         apiInterface.getTrailers(String.format("%s", id), Utils.API_KEY, "en-US")
                 .enqueue(new Callback<GetTrailersResponseData>() {
                     @Override
@@ -243,15 +262,15 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     {
                         if (response.body().getResults().size() > 0){
                             trailersAdapter.setData(response.body().getResults());
+                            dialog.dismiss();
                         }
 
                         GetMovieSimilar(id);
-
                     }
 
                     @Override
                     public void onFailure(Call<GetTrailersResponseData> call, Throwable t) {
-
+                        dialog.dismiss();
                     }
                 });
 
@@ -259,7 +278,7 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
 
     private void GetMovieDetail(final int id)
     {
-
+        dialog.show();
         apiInterface.getMovieDetail(String.format("%s", id), Utils.API_KEY, Utils.LANGUAGE)
                 .enqueue(new Callback<GetMovieDetailResponseData>() {
                     @Override
@@ -320,13 +339,14 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                             textGenres.setText(genres);
                         }
 
+                        dialog.dismiss();
                         GetTrailers(item.getId());
                     }
 
                     @Override
                     public void onFailure(Call<GetMovieDetailResponseData> call, Throwable t)
                     {
-
+                        dialog.dismiss();
                     }
                 });
     }
@@ -341,6 +361,11 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
     }
 
     @Override

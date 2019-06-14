@@ -1,6 +1,5 @@
 package di.module;
 
-import com.prueba.rappi.activities.MainActivity;
 import com.prueba.rappi.activities.MovieDetailActivity;
 
 import javax.inject.Named;

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:ignore="MissingConstraints">
+
+        <android.support.v7.widget.CardView
+            android:id="@+id/cardView"
+            android:orientation="vertical"
+            app:cardUseCompatPadding="true"
+            app:cardElevation="4dp"
+            app:cardCornerRadius="10dp"
+            android:layout_alignParentLeft="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <com.jcminarro.roundkornerlayout.RoundKornerLinearLayout
+                android:layout_width="110dp"
+                android:layout_height="150dp"
+                android:orientation="vertical"
+                app:corner_radius="10dp" >
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:transitionName="movieDetail"
+                    android:scaleType="fitXY"
+                    android:id="@+id/imageViewPoster" />
+            </com.jcminarro.roundkornerlayout.RoundKornerLinearLayout>
+
+        </android.support.v7.widget.CardView>
+
+        <TextView
+            android:id="@+id/textTitle"
+            android:text="Movie title"
+            style="@style/TextAppearance.AppCompat.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/textYear"
+            android:layout_toRightOf="@+id/cardView" />
+
+        <TextView
+            android:id="@+id/textYear"
+            style="@style/TextAppearance.AppCompat.Subhead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/ratingMovie"
+            android:layout_toRightOf="@id/cardView"
+            android:layout_marginLeft="5dp"
+            android:text="(2000)" />
+
+        <android.support.v7.widget.AppCompatRatingBar
+            android:id="@+id/ratingMovie"
+            style="@style/Widget.AppCompat.RatingBar.Small"
+            android:layout_width="wrap_content"
+            android:layout_toRightOf="@+id/cardView"
+            android:layout_marginBottom="20dp"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@id/cardView" />
+
+    </RelativeLayout>
+
+</android.support.constraint.ConstraintLayout>

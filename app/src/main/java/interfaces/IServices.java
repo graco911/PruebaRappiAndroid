@@ -45,6 +45,15 @@ public interface IServices {
             @Query("session_id") String sessionId
     );
 
+    @GET("search/movie")
+    Call<GetResponseUserData> searchMovie(
+            @Query("api_key") String apiKey,
+            @Query("language") String language,
+            @Query("query") String query,
+            @Query("page") String page,
+            @Query("include_adult") String includeAdult
+    );
+
     @POST("authentication/session/new")
     Call<GetUserSessionIdData> getSession(
             @Query("api_key") String apiKey,
@@ -60,7 +69,7 @@ public interface IServices {
     );
 
     @GET("account/{account_id}/favorite/movies")
-    Call<GetFavoritesMoviesResponseData> getFavorites(
+    Call<GetMovieResponseData> getFavorites(
             @Path("account_id") String accountId,
             @Query("api_key") String apiKey,
             @Query("session_id") String sessionId,
