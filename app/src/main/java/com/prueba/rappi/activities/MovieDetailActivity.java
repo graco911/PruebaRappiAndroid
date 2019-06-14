@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatRatingBar;
@@ -16,6 +17,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+import com.pixplicity.easyprefs.library.Prefs;
 import com.prueba.rappi.R;
 import com.squareup.picasso.Picasso;
 import com.takusemba.multisnaprecyclerview.MultiSnapRecyclerView;
@@ -36,9 +39,12 @@ import di.qualifier.ActivityContext;
 import di.qualifier.ApplicationContext;
 import helpers.Utils;
 import interfaces.IServices;
+import models.GetAddFavoritesResponseData;
 import models.GetMovieDetailResponseData;
 import models.GetMovieResponseData;
+import models.GetResponseUserData;
 import models.GetTrailersResponseData;
+import models.SetFavoriteMovieData;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -80,12 +86,12 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
     private boolean isbBusy;
     private LinearLayoutManager layoutManagerSimilar;
     private int movieid;
+    private Gson gson;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_detail);
-
 
         imgToolbar = (ImageView) findViewById(R.id.imgToolbar);
         imageViewPoster = (ImageView) findViewById(R.id.imageViewPoster);
@@ -111,6 +117,45 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                 .applicationComponent(applicationComponent).build();
 
         movieDetailActivityComponent.inject(this);
+
+        Utils.GetPrefsInstance(this);
+        gson = new Gson();
+
+        btnFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View view) {
+
+                if (!Prefs.getString("UserData", "").isEmpty()){
+
+                    GetResponseUserData userData = gson.fromJson(Prefs.getString("UserData", ""), GetResponseUserData.class);
+                    String sessionId = Prefs.getString("UserSession", "");
+
+                    SetFavoriteMovieData movieData = new SetFavoriteMovieData();
+                    movieData.setFavorite(true);
+                    movieData.setMediaId(movieid);
+                    movieData.setMediaType("movie");
+                    apiInterface.setFavorite(String.valueOf(userData.getId()), Utils.API_KEY, sessionId, movieData)
+                            .enqueue(new Callback<GetAddFavoritesResponseData>() {
+                                @Override
+                                public void onResponse(Call<GetAddFavoritesResponseData> call, Response<GetAddFavoritesResponseData> response)
+                                {
+                                    Snackbar.make(view, response.body().getStatusMessage(), Snackbar.LENGTH_LONG)
+                                            .setAction("Aceptar", null).show();
+                                }
+
+                                @Override
+                                public void onFailure(Call<GetAddFavoritesResponseData> call, Throwable t)
+                                {
+                                    if (t.getMessage().isEmpty())
+                                    {
+
+                                    }
+
+                                }
+                            });
+                }
+            }
+        });
 
         LinearLayoutManager layoutManagerTrailers = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         listTrailers.setLayoutManager(layoutManagerTrailers);

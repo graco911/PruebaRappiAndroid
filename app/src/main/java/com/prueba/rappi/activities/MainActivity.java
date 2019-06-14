@@ -1,5 +1,6 @@
 package com.prueba.rappi.activities;
 
+import android.app.Presentation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -24,10 +25,15 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
+import com.google.gson.Gson;
 import com.pixplicity.easyprefs.library.Prefs;
 import com.prueba.rappi.R;
+import com.squareup.picasso.Picasso;
 import com.takusemba.multisnaprecyclerview.MultiSnapRecyclerView;
+
+import org.w3c.dom.Text;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -44,6 +50,7 @@ import helpers.Utils;
 import interfaces.IServices;
 import models.GetMovieResponseData;
 import models.GetRequestTokenData;
+import models.GetResponseUserData;
 import models.GetUserSessionIdData;
 import models.SetRequestSessionData;
 import retrofit2.Call;
@@ -85,6 +92,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private MainActivityComponent mainActivityComponent;
     private CustomTabsServiceConnection connection;
     private View headerLayout;
+    private Gson gson;
+    private NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,12 +112,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView = findViewById(R.id.nav_view);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
+        headerLayout = navigationView.getHeaderView(0);
 
         Utils.GetPrefsInstance(this);
 
@@ -145,15 +155,29 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         SetScrollListener(listPopular, layoutManagerPopular, EMovieType.popular, PopularAdapter, currentPagePopular);
         SetScrollListener(listUpcoming, layoutManagerUpcoming, EMovieType.upcoming, UpcomingAdapter, currentPageUpcoming);
 
-        headerLayout = navigationView.getHeaderView(0);
+        gson = new Gson();
 
-        if (Prefs.getString("UserSession", "").isEmpty()){
+        ShowUserData();
+    }
 
-            headerLayout.findViewById(R.id.imageView).setVisibility(View.INVISIBLE);
-            headerLayout.findViewById(R.id.textUserName).setVisibility(View.INVISIBLE);
-            headerLayout.findViewById(R.id.textUserEmail).setVisibility(View.INVISIBLE);
+    private void ShowUserData() {
+
+        if (!Prefs.getString("UserData", "").isEmpty()){
+
+            navigationView.getMenu().findItem(R.id.nav_login).setVisible(false);
+            navigationView.getMenu().findItem(R.id.nav_favorites).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_logout).setVisible(true);
+
+            GetResponseUserData userData = gson.fromJson(Prefs.getString("UserData", ""), GetResponseUserData.class);
+
+            TextView userName = headerLayout.findViewById(R.id.textUserName);
+            userName.setText(userData.getUsername());
+
+            Picasso.with(this).load(String.format("https://www.gravatar.com/avatar/%s", userData.getAvatar().getGravatar().getHash())).into((ImageView) headerLayout.findViewById(R.id.imageView));
+
+            userName.setVisibility(View.VISIBLE);
+            headerLayout.findViewById(R.id.imageView).setVisibility(View.VISIBLE);
         }
-
     }
 
     private void SetScrollListener(MultiSnapRecyclerView list,
@@ -262,50 +286,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         switch (id){
             case R.id.nav_login:
-
-
-                apiInterface.getRequestToken(Utils.API_KEY)
-                        .enqueue(new Callback<GetRequestTokenData>() {
-                            @Override
-                            public void onResponse(Call<GetRequestTokenData> call, Response<GetRequestTokenData> response) {
-
-                                if (response.body().getSuccess())
-                                {
-
-                                    response.body().getRequestToken();
-
-                                    final String parseUrl = String.format("https://www.themoviedb.org/authenticate/%s?redirect_to=anything://com.recargas.auth.auth_callback_anything", response.body().getRequestToken());
-
-                                    connection = new CustomTabsServiceConnection() {
-                                        @Override
-                                        public void onCustomTabsServiceConnected(ComponentName componentName, CustomTabsClient client) {
-                                            CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
-                                            CustomTabsIntent intent = builder.build();
-                                            client.warmup(0L); // This prevents backgrounding after redirection
-                                            intent.launchUrl(MainActivity.this, Uri.parse(parseUrl));
-                                        }
-
-                                        @Override
-                                        public void onServiceDisconnected(ComponentName name) {
-
-                                        }
-                                    };
-
-                                    CustomTabsClient.bindCustomTabsService(getApplicationContext(), "com.android.chrome", connection);
-
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Call<GetRequestTokenData> call, Throwable t) {
-
-                            }
-                        });
-
+                LoginUser();
                 break;
             case R.id.nav_favorites:
                 break;
             case R.id.nav_options:
+                break;
+            case R.id.nav_logout:
+                LogoutUser();
                 break;
         }
 
@@ -313,6 +301,53 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.closeDrawer(GravityCompat.START);
 
         return true;
+    }
+
+    private void LogoutUser() {
+
+        Prefs.putString("UserData", "");
+        Prefs.putString("UserSession", "");
+        finish();
+    }
+
+    private void LoginUser() {
+
+        apiInterface.getRequestToken(Utils.API_KEY)
+                .enqueue(new Callback<GetRequestTokenData>() {
+                    @Override
+                    public void onResponse(Call<GetRequestTokenData> call, Response<GetRequestTokenData> response) {
+
+                        if (response.body().getSuccess())
+                        {
+                            response.body().getRequestToken();
+
+                            final String parseUrl = String.format("https://www.themoviedb.org/authenticate/%s?redirect_to=anything://com.recargas.auth.auth_callback_anything", response.body().getRequestToken());
+
+                            connection = new CustomTabsServiceConnection() {
+                                @Override
+                                public void onCustomTabsServiceConnected(ComponentName componentName, CustomTabsClient client) {
+                                    CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+                                    CustomTabsIntent intent = builder.build();
+                                    client.warmup(0L); // This prevents backgrounding after redirection
+                                    intent.launchUrl(MainActivity.this, Uri.parse(parseUrl));
+                                }
+
+                                @Override
+                                public void onServiceDisconnected(ComponentName name) {
+
+                                }
+                            };
+
+                            CustomTabsClient.bindCustomTabsService(getApplicationContext(), "com.android.chrome", connection);
+
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<GetRequestTokenData> call, Throwable t) {
+
+                    }
+                });
     }
 
     @Override
@@ -355,14 +390,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void GetUserData(String sessionId) {
 
         apiInterface.getUserData(Utils.API_KEY, sessionId)
-                .enqueue(new Callback<GetRequestTokenData>() {
+                .enqueue(new Callback<GetResponseUserData>() {
                     @Override
-                    public void onResponse(Call<GetRequestTokenData> call, Response<GetRequestTokenData> response) {
+                    public void onResponse(Call<GetResponseUserData> call, Response<GetResponseUserData> response) {
+                        Prefs.putString("UserData", gson.toJson(response.body()));
 
+                        ShowUserData();
                     }
 
                     @Override
-                    public void onFailure(Call<GetRequestTokenData> call, Throwable t) {
+                    public void onFailure(Call<GetResponseUserData> call, Throwable t) {
 
                     }
                 });

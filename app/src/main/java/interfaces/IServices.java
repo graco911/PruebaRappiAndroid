@@ -5,6 +5,7 @@ import models.GetFavoritesMoviesResponseData;
 import models.GetMovieDetailResponseData;
 import models.GetMovieResponseData;
 import models.GetRequestTokenData;
+import models.GetResponseUserData;
 import models.GetTrailersResponseData;
 import models.GetUserSessionIdData;
 import models.SetFavoriteMovieData;
@@ -39,7 +40,7 @@ public interface IServices {
     );
 
     @GET("account")
-    Call<GetRequestTokenData> getUserData(
+    Call<GetResponseUserData> getUserData(
             @Query("api_key") String apiKey,
             @Query("session_id") String sessionId
     );
@@ -50,10 +51,11 @@ public interface IServices {
             @Body SetRequestSessionData requestSessionData
     );
 
-    @GET("account/{account_id}/favorite")
+    @POST("account/{account_id}/favorite")
     Call<GetAddFavoritesResponseData> setFavorite(
             @Path("account_id") String accountId,
             @Query("api_key") String apiKey,
+            @Query("session_id") String sessionId,
             @Body SetFavoriteMovieData favoriteMovieData
     );
 
