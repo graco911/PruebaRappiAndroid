@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,7 +15,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.prueba.rappi.R;
 import com.squareup.picasso.Picasso;
@@ -86,7 +86,7 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_detail);
 
-        appbar = (Toolbar) findViewById(R.id.appbar);
+
         imgToolbar = (ImageView) findViewById(R.id.imgToolbar);
         imageViewPoster = (ImageView) findViewById(R.id.imageViewPoster);
         textTitle = (TextView) findViewById(R.id.textTitle);
@@ -98,9 +98,10 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
         btnFab = (FloatingActionButton) findViewById(R.id.btnFab);
         textGenres = (TextView) findViewById(R.id.textGenres);
 
+        appbar = (Toolbar) findViewById(R.id.appbar);
         setSupportActionBar(appbar);
-
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setTitle("");
 
         movieid = getIntent().getIntExtra("MovieId", 0);
 
@@ -221,6 +222,8 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
 
                         GetMovieDetailResponseData item = response.body();
 
+                        getSupportActionBar().setTitle(item.getTitle());
+
                         if (!item.getPosterPath().isEmpty()) {
                             String urlMoviePoster = String.format("https://image.tmdb.org/t/p/w500/%s", item.getPosterPath());
                             Picasso.with(getApplicationContext()).load(urlMoviePoster).into(imageViewPoster);
@@ -286,8 +289,7 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
     @Override
     public void onBackPressed() {
 
-        supportFinishAfterTransition();
-
+        finish();
     }
 
     @Override
@@ -311,8 +313,11 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
     }
 
     @Override
-    public void launchIntent(int movieId) {
-        Toast.makeText(this, "RecyclerView Row selected", Toast.LENGTH_SHORT).show();
-        startActivity(new Intent(this, MovieDetailActivity.class).putExtra("MovieId", movieId));
+    public void launchIntent(int movieId, ImageView movieImage) {
+        Intent intent = new Intent(this, MovieDetailActivity.class);
+        intent.putExtra("MovieId", movieId);
+        ActivityOptionsCompat options = ActivityOptionsCompat.
+                makeSceneTransitionAnimation(this, movieImage, "movieDetail");
+        startActivity(intent, options.toBundle());
     }
 }

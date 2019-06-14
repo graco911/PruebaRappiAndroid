@@ -1,12 +1,18 @@
 package com.prueba.rappi.activities;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.customtabs.CustomTabsClient;
+import android.support.customtabs.CustomTabsIntent;
+import android.support.customtabs.CustomTabsServiceConnection;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -17,8 +23,9 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
+import android.widget.ImageView;
 
+import com.pixplicity.easyprefs.library.Prefs;
 import com.prueba.rappi.R;
 import com.takusemba.multisnaprecyclerview.MultiSnapRecyclerView;
 
@@ -36,6 +43,9 @@ import enumerators.EMovieType;
 import helpers.Utils;
 import interfaces.IServices;
 import models.GetMovieResponseData;
+import models.GetRequestTokenData;
+import models.GetUserSessionIdData;
+import models.SetRequestSessionData;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -73,6 +83,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private MultiSnapRecyclerView listPopular, listUpcoming, listTopRated;
     private MainActivityComponent mainActivityComponent;
+    private CustomTabsServiceConnection connection;
+    private View headerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +109,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
+
+        Utils.GetPrefsInstance(this);
 
         ApplicationComponent applicationComponent = MovieApplication.get(this).getApplicationComponent();
         mainActivityComponent = DaggerMainActivityComponent.builder()
@@ -130,6 +144,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         SetScrollListener(listTopRated, layoutManagerTopRated, EMovieType.top_rated, TopRatedAdapter, currentPageTopRated);
         SetScrollListener(listPopular, layoutManagerPopular, EMovieType.popular, PopularAdapter, currentPagePopular);
         SetScrollListener(listUpcoming, layoutManagerUpcoming, EMovieType.upcoming, UpcomingAdapter, currentPageUpcoming);
+
+        headerLayout = navigationView.getHeaderView(0);
+
+        if (Prefs.getString("UserSession", "").isEmpty()){
+
+            headerLayout.findViewById(R.id.imageView).setVisibility(View.INVISIBLE);
+            headerLayout.findViewById(R.id.textUserName).setVisibility(View.INVISIBLE);
+            headerLayout.findViewById(R.id.textUserEmail).setVisibility(View.INVISIBLE);
+        }
 
     }
 
@@ -171,14 +194,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         apiInterface.getMovies(movietype.toString(), Utils.API_KEY, Utils.LANGUAGE, page)
                 .enqueue(new Callback<GetMovieResponseData>() {
                     @Override
-                    public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response)
-                    {
+                    public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response) {
                         adapt.setData(response.body().getResults());
                     }
 
                     @Override
-                    public void onFailure(Call<GetMovieResponseData> call, Throwable t)
-                    {
+                    public void onFailure(Call<GetMovieResponseData> call, Throwable t) {
 
                     }
                 });
@@ -190,14 +211,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         apiInterface.getMovies(movieType.toString(), Utils.API_KEY, Utils.LANGUAGE, Utils.PAGE)
                 .enqueue(new Callback<GetMovieResponseData>() {
                     @Override
-                    public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response)
-                    {
+                    public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response) {
                         adapter.setData(response.body().getResults());
                     }
 
                     @Override
-                    public void onFailure(Call<GetMovieResponseData> call, Throwable t)
-                    {
+                    public void onFailure(Call<GetMovieResponseData> call, Throwable t) {
 
                     }
                 });
@@ -241,29 +260,122 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_home) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
+        switch (id){
+            case R.id.nav_login:
 
-        } else if (id == R.id.nav_slideshow) {
 
-        } else if (id == R.id.nav_tools) {
+                apiInterface.getRequestToken(Utils.API_KEY)
+                        .enqueue(new Callback<GetRequestTokenData>() {
+                            @Override
+                            public void onResponse(Call<GetRequestTokenData> call, Response<GetRequestTokenData> response) {
 
-        } else if (id == R.id.nav_share) {
+                                if (response.body().getSuccess())
+                                {
 
-        } else if (id == R.id.nav_send) {
+                                    response.body().getRequestToken();
 
+                                    final String parseUrl = String.format("https://www.themoviedb.org/authenticate/%s?redirect_to=anything://com.recargas.auth.auth_callback_anything", response.body().getRequestToken());
+
+                                    connection = new CustomTabsServiceConnection() {
+                                        @Override
+                                        public void onCustomTabsServiceConnected(ComponentName componentName, CustomTabsClient client) {
+                                            CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+                                            CustomTabsIntent intent = builder.build();
+                                            client.warmup(0L); // This prevents backgrounding after redirection
+                                            intent.launchUrl(MainActivity.this, Uri.parse(parseUrl));
+                                        }
+
+                                        @Override
+                                        public void onServiceDisconnected(ComponentName name) {
+
+                                        }
+                                    };
+
+                                    CustomTabsClient.bindCustomTabsService(getApplicationContext(), "com.android.chrome", connection);
+
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<GetRequestTokenData> call, Throwable t) {
+
+                            }
+                        });
+
+                break;
+            case R.id.nav_favorites:
+                break;
+            case R.id.nav_options:
+                break;
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
+
         return true;
     }
 
     @Override
-    public void launchIntent(int movieId)
+    protected void onNewIntent(Intent intent)
     {
-        Toast.makeText(this, "RecyclerView Row selected", Toast.LENGTH_SHORT).show();
-        startActivity(new Intent(this, MovieDetailActivity.class).putExtra("MovieId", movieId));
+        super.onNewIntent(intent);
+
+        String action = intent.getAction();
+        String data = intent.getDataString();
+        if (Intent.ACTION_VIEW.equals(action) && data != null) {
+
+            String result = data.substring(data.indexOf("=") + 1, data.indexOf("&"));
+
+            if (!result.isEmpty()){
+
+                SetRequestSessionData request = new SetRequestSessionData();
+                request.setRequestToken(result);
+                apiInterface.getSession(Utils.API_KEY, request)
+                        .enqueue(new Callback<GetUserSessionIdData>() {
+                            @Override
+                            public void onResponse(Call<GetUserSessionIdData> call, Response<GetUserSessionIdData> response)
+                            {
+                                if (response.body().getSuccess()){
+
+                                    Prefs.putString("UserSession", response.body().getSessionId());
+
+                                    GetUserData(response.body().getSessionId());
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<GetUserSessionIdData> call, Throwable t) {
+
+                            }
+                        });
+            }
+        }
+    }
+
+    private void GetUserData(String sessionId) {
+
+        apiInterface.getUserData(Utils.API_KEY, sessionId)
+                .enqueue(new Callback<GetRequestTokenData>() {
+                    @Override
+                    public void onResponse(Call<GetRequestTokenData> call, Response<GetRequestTokenData> response) {
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<GetRequestTokenData> call, Throwable t) {
+
+                    }
+                });
+
+    }
+
+    @Override
+    public void launchIntent(int movieId, ImageView movieImage) {
+
+        Intent intent = new Intent(this, MovieDetailActivity.class);
+        intent.putExtra("MovieId", movieId);
+        ActivityOptionsCompat options = ActivityOptionsCompat.
+                makeSceneTransitionAnimation(this, movieImage, "movieDetail");
+        startActivity(intent, options.toBundle());
     }
 }

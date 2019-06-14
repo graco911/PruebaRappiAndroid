@@ -1,6 +1,7 @@
 package adapters;
 
 import android.support.annotation.NonNull;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,7 +32,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
     }
 
     public interface ClickListener {
-        void launchIntent(int movieId);
+        void launchIntent(int movieId, ImageView movieImage);
     }
 
     public void setData(List<GetMovieResponseData.Result> data) {
@@ -47,10 +48,20 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MovieViewHolder movieViewHolder, int i) {
+    public void onBindViewHolder(@NonNull final MovieViewHolder movieViewHolder, int i) {
 
         String url = String.format("https://image.tmdb.org/t/p/w500/%s", data.get(i).getPosterPath());
-        Picasso.with(movieViewHolder.itemView.getContext()).load(url).placeholder(R.drawable.no_image).into(movieViewHolder.imageMovie);
+        Picasso.with(movieViewHolder.itemView.getContext()).load(url).into(movieViewHolder.imageMovie);
+
+        ViewCompat.setTransitionName(movieViewHolder.imageMovie, "movieDetail");
+
+        movieViewHolder.imageMovie.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view) {
+                clickListener.launchIntent(data.get(movieViewHolder.getAdapterPosition()).getId(), movieViewHolder.imageMovie);
+            }
+        });
     }
 
     @Override
@@ -66,14 +77,6 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
             super(itemView);
 
             imageMovie = itemView.findViewById(R.id.imageViewPoster);
-
-            imageMovie.setOnClickListener(new View.OnClickListener()
-            {
-                @Override
-                public void onClick(View view) {
-                    clickListener.launchIntent(data.get(getAdapterPosition()).getId());
-                }
-            });
         }
     }
 }

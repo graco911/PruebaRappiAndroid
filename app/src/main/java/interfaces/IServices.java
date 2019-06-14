@@ -38,6 +38,12 @@ public interface IServices {
             @Query("api_key") String apiKey
     );
 
+    @GET("account")
+    Call<GetRequestTokenData> getUserData(
+            @Query("api_key") String apiKey,
+            @Query("session_id") String sessionId
+    );
+
     @POST("authentication/session/new")
     Call<GetUserSessionIdData> getSession(
             @Query("api_key") String apiKey,

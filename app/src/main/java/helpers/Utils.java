@@ -2,7 +2,10 @@ package helpers;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.DialogInterface;
+
+import com.pixplicity.easyprefs.library.Prefs;
 
 import java.text.SimpleDateFormat;
 
@@ -31,5 +34,14 @@ public class Utils {
 
     public static SimpleDateFormat GetDateFormat(String format){
         return new SimpleDateFormat(format);
+    }
+
+    public static void GetPrefsInstance(Context context){
+        new Prefs.Builder()
+                .setContext(context)
+                .setMode(ContextWrapper.MODE_PRIVATE)
+                .setPrefsName(context.getPackageName())
+                .setUseDefaultSharedPreference(true)
+                .build();
     }
 }
