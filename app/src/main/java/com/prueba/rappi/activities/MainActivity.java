@@ -1,7 +1,6 @@
 package com.prueba.rappi.activities;
 
 import android.app.AlertDialog;
-import android.app.Presentation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -21,6 +20,7 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -34,7 +34,7 @@ import com.prueba.rappi.R;
 import com.squareup.picasso.Picasso;
 import com.takusemba.multisnaprecyclerview.MultiSnapRecyclerView;
 
-import org.w3c.dom.Text;
+import java.util.Arrays;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -97,20 +97,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Gson gson;
     private NavigationView navigationView;
     private AlertDialog dialog;
+    private SearchView mSearchView;
+    private MenuItem mSearch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        FloatingActionButton fab = findViewById(R.id.fab);
+        final FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+
+                Intent intent = new Intent(MainActivity.this, SearchActivity.class);
+                ActivityOptionsCompat options = ActivityOptionsCompat.
+                        makeSceneTransitionAnimation(MainActivity.this, fab, "searchMorph");
+                startActivity(intent, options.toBundle());
+                getWindow().setExitTransition(null);
             }
         });
 
@@ -130,6 +136,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 .setMessage("Espere por favor....")
                 .setCancelable(false)
                 .build();
+
+        gson = new Gson();
 
         ApplicationComponent applicationComponent = MovieApplication.get(this).getApplicationComponent();
         mainActivityComponent = DaggerMainActivityComponent.builder()
@@ -152,9 +160,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         listTopRated = findViewById(R.id.listTopRatedSnap);
         listTopRated.setLayoutManager(layoutManagerTopRated);
 
-        GetMovies(EMovieType.upcoming, UpcomingAdapter);
-        GetMovies(EMovieType.popular, PopularAdapter);
-        GetMovies(EMovieType.top_rated, TopRatedAdapter);
+        if(Utils.isOnline(this)){
+
+            GetMovies(EMovieType.upcoming, UpcomingAdapter);
+            GetMovies(EMovieType.popular, PopularAdapter);
+            GetMovies(EMovieType.top_rated, TopRatedAdapter);
+
+        }else {
+
+            GetMovieResponseData.Result[] popularMoviesOffline = gson.fromJson(Prefs.getString(EMovieType.popular.toString(), ""), GetMovieResponseData.Result[].class);
+            GetMovieResponseData.Result[] topratedMoviesOffline = gson.fromJson(Prefs.getString(EMovieType.top_rated.toString(), ""), GetMovieResponseData.Result[].class);
+            GetMovieResponseData.Result[] upcomingMoviesOffline = gson.fromJson(Prefs.getString(EMovieType.upcoming.toString(), ""), GetMovieResponseData.Result[].class);
+
+            if (popularMoviesOffline != null)
+                PopularAdapter.setData(Arrays.asList(upcomingMoviesOffline));
+
+            if (topratedMoviesOffline != null)
+                TopRatedAdapter.setData(Arrays.asList(topratedMoviesOffline));
+
+            if (upcomingMoviesOffline != null)
+                UpcomingAdapter.setData(Arrays.asList(popularMoviesOffline));
+
+            Snackbar.make(getWindow().getDecorView().getRootView(), "Sin conexión a internet.", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+
+        }
 
         listTopRated.setAdapter(TopRatedAdapter);
         listUpcoming.setAdapter(UpcomingAdapter);
@@ -163,8 +193,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         SetScrollListener(listTopRated, layoutManagerTopRated, EMovieType.top_rated, TopRatedAdapter, currentPageTopRated);
         SetScrollListener(listPopular, layoutManagerPopular, EMovieType.popular, PopularAdapter, currentPagePopular);
         SetScrollListener(listUpcoming, layoutManagerUpcoming, EMovieType.upcoming, UpcomingAdapter, currentPageUpcoming);
-
-        gson = new Gson();
 
         ShowUserData();
     }
@@ -239,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     }
 
-    private void GetMovies(EMovieType movieType, final MoviesAdapter adapter) {
+    private void GetMovies(final EMovieType movieType, final MoviesAdapter adapter) {
 
         dialog.show();
         apiInterface.getMovies(movieType.toString(), Utils.API_KEY, Utils.LANGUAGE, Utils.PAGE)
@@ -247,6 +275,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     @Override
                     public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response) {
                         adapter.setData(response.body().getResults());
+
+                        Prefs.putString(movieType.toString(), gson.toJson(response.body().getResults()));
                         dialog.dismiss();
                     }
 
@@ -270,8 +300,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
+
         return false;
     }
 
@@ -283,7 +312,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         switch (id){
             case R.id.nav_login:
-                LoginUser();
+                if (Utils.isOnline(this)){
+                    LoginUser();
+                }else{
+                    Snackbar.make(getWindow().getDecorView().getRootView(), "Sin conexión a internet.", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
                 break;
             case R.id.nav_favorites:
                 LaunchFavorites();
@@ -399,7 +433,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     @Override
                     public void onResponse(Call<GetResponseUserData> call, Response<GetResponseUserData> response) {
                         Prefs.putString("UserData", gson.toJson(response.body()));
-
                         ShowUserData();
                     }
 
@@ -414,10 +447,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void launchIntent(int movieId, ImageView movieImage) {
 
-        Intent intent = new Intent(this, MovieDetailActivity.class);
-        intent.putExtra("MovieId", movieId);
-        ActivityOptionsCompat options = ActivityOptionsCompat.
-                makeSceneTransitionAnimation(this, movieImage, "movieDetail");
-        startActivity(intent, options.toBundle());
+        if (Utils.isOnline(this)){
+
+            Intent intent = new Intent(this, MovieDetailActivity.class);
+            intent.putExtra("MovieId", movieId);
+            ActivityOptionsCompat options = ActivityOptionsCompat.
+                    makeSceneTransitionAnimation(this, movieImage, "movieDetail");
+            startActivity(intent, options.toBundle());
+
+            getWindow().setExitTransition(null);
+
+        }
+        else{
+
+            Snackbar.make(getWindow().getDecorView().getRootView(), "Sin conexión a internet.", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
     }
 }

@@ -3,6 +3,7 @@
     package="com.prueba.rappi">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".activities.MovieApplication"
@@ -12,12 +13,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".activities.FavoritesActivity"></activity>
+        <activity android:name=".activities.SearchActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity android:name=".activities.FavoritesActivity" />
         <activity
             android:name=".activities.MovieDetailActivity"
             android:screenOrientation="portrait"
-            android:theme="@style/AppTheme.NoActionBar" >
-
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -28,7 +31,6 @@
                     android:host="com.recargas.auth.auth_callback_anything"
                     android:scheme="anything" />
             </intent-filter>
-
         </activity>
         <activity
             android:name=".activities.MainActivity"

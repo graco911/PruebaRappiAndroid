@@ -2,13 +2,10 @@ package com.prueba.rappi.activities;
 
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.customtabs.CustomTabsClient;
-import android.support.customtabs.CustomTabsIntent;
 import android.support.customtabs.CustomTabsServiceConnection;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -48,7 +45,6 @@ import interfaces.IServices;
 import models.GetAddFavoritesResponseData;
 import models.GetMovieDetailResponseData;
 import models.GetMovieResponseData;
-import models.GetRequestTokenData;
 import models.GetResponseUserData;
 import models.GetTrailersResponseData;
 import models.SetFavoriteMovieData;
@@ -100,6 +96,9 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().setEnterTransition(null);
+
         setContentView(R.layout.activity_movie_detail);
 
         imgToolbar = (ImageView) findViewById(R.id.imgToolbar);
@@ -135,40 +134,37 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                 .setCancelable(false)
                 .build();
 
-        btnFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View view) {
+        btnFab.setOnClickListener(view -> {
 
-                dialog.show();
-                if (!Prefs.getString("UserData", "").isEmpty()) {
+            dialog.show();
+            if (!Prefs.getString("UserData", "").isEmpty()) {
 
-                    GetResponseUserData userData = gson.fromJson(Prefs.getString("UserData", ""), GetResponseUserData.class);
-                    String sessionId = Prefs.getString("UserSession", "");
+                GetResponseUserData userData = gson.fromJson(Prefs.getString("UserData", ""), GetResponseUserData.class);
+                String sessionId = Prefs.getString("UserSession", "");
 
-                    SetFavoriteMovieData movieData = new SetFavoriteMovieData();
-                    movieData.setFavorite(true);
-                    movieData.setMediaId(movieid);
-                    movieData.setMediaType("movie");
-                    apiInterface.setFavorite(String.valueOf(userData.getId()), Utils.API_KEY, sessionId, movieData)
-                            .enqueue(new Callback<GetAddFavoritesResponseData>() {
-                                @Override
-                                public void onResponse(Call<GetAddFavoritesResponseData> call, Response<GetAddFavoritesResponseData> response) {
-                                    dialog.dismiss();
-                                    Snackbar.make(view, response.body().getStatusMessage(), Snackbar.LENGTH_LONG)
-                                            .setAction("Aceptar", null).show();
-                                }
+                SetFavoriteMovieData movieData = new SetFavoriteMovieData();
+                movieData.setFavorite(true);
+                movieData.setMediaId(movieid);
+                movieData.setMediaType("movie");
+                apiInterface.setFavorite(String.valueOf(userData.getId()), Utils.API_KEY, sessionId, movieData)
+                        .enqueue(new Callback<GetAddFavoritesResponseData>() {
+                            @Override
+                            public void onResponse(Call<GetAddFavoritesResponseData> call, Response<GetAddFavoritesResponseData> response) {
+                                dialog.dismiss();
+                                Snackbar.make(view, response.body().getStatusMessage(), Snackbar.LENGTH_LONG)
+                                        .setAction("Aceptar", null).show();
+                            }
 
-                                @Override
-                                public void onFailure(Call<GetAddFavoritesResponseData> call, Throwable t) {
-                                    dialog.dismiss();
-                                }
-                            });
-                }
-                else {
-                    dialog.dismiss();
-                    Snackbar.make(view, "No has iniciado sesión.", Snackbar.LENGTH_LONG)
-                            .setAction("Aceptar", null).show();
-                }
+                            @Override
+                            public void onFailure(Call<GetAddFavoritesResponseData> call, Throwable t) {
+                                dialog.dismiss();
+                            }
+                        });
+            }
+            else {
+                dialog.dismiss();
+                Snackbar.make(view, "No has iniciado sesión.", Snackbar.LENGTH_LONG)
+                        .setAction("Aceptar", null).show();
             }
         });
 
@@ -183,8 +179,17 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
 
         SetScrollListener();
 
-        GetMovieDetail(movieid);
-
+        if (Utils.isOnline(this)){
+            GetMovieDetail(movieid);
+        }else{
+            Snackbar.make(getWindow().getDecorView().getRootView(), "Sin conexión a internet.", Snackbar.LENGTH_LONG)
+                    .setAction("Aceptar", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            finish();
+                        }
+                    }).show();
+        }
     }
 
     private void SetScrollListener() {
@@ -224,6 +229,13 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     public void onFailure(Call<GetMovieResponseData> call, Throwable t)
                     {
                         dialog.dismiss();
+                        Snackbar.make(getWindow().getDecorView().getRootView(), "Sin resultados.", Snackbar.LENGTH_LONG)
+                                .setAction("Aceptar", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        finish();
+                                    }
+                                }).show();
                     }
                 });
 
@@ -247,6 +259,13 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     public void onFailure(Call<GetMovieResponseData> call, Throwable t)
                     {
                         dialog.dismiss();
+                        Snackbar.make(getWindow().getDecorView().getRootView(), "Sin resultados.", Snackbar.LENGTH_LONG)
+                                .setAction("Aceptar", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        finish();
+                                    }
+                                }).show();
                     }
                 });
 
@@ -271,6 +290,13 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     @Override
                     public void onFailure(Call<GetTrailersResponseData> call, Throwable t) {
                         dialog.dismiss();
+                        Snackbar.make(getWindow().getDecorView().getRootView(), "Sin resultados.", Snackbar.LENGTH_LONG)
+                                .setAction("Aceptar", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        finish();
+                                    }
+                                }).show();
                     }
                 });
 
@@ -284,77 +310,99 @@ public class MovieDetailActivity extends AppCompatActivity implements TrailersAd
                     @Override
                     public void onResponse(Call<GetMovieDetailResponseData> call, Response<GetMovieDetailResponseData> response) {
 
-                        GetMovieDetailResponseData item = response.body();
+                        if (response.body() != null){
 
-                        getSupportActionBar().setTitle(item.getTitle());
+                            GetMovieDetailResponseData item = response.body();
 
-                        if (!item.getPosterPath().isEmpty()) {
-                            String urlMoviePoster = String.format("https://image.tmdb.org/t/p/w500/%s", item.getPosterPath());
-                            Picasso.with(getApplicationContext()).load(urlMoviePoster).into(imageViewPoster);
-                        } else {
-                            imageViewPoster.setVisibility(View.INVISIBLE);
-                        }
+                            FillMovieData(response.body());
 
-                        if (!item.getBackdropPath().isEmpty()) {
-                            String urlMovieBack = String.format("https://image.tmdb.org/t/p/w500/%s", item.getBackdropPath());
-                            Picasso.with(getApplicationContext()).load(urlMovieBack).into(imgToolbar);
-                        }
+                            GetTrailers(item.getId());
+                        }else{
 
-                        if (!item.getTitle().isEmpty()) {
-                            textTitle.setText(response.body().getTitle());
-                        }
+                            Snackbar.make(getWindow().getDecorView().getRootView(), "Problemas con la busqueda.", Snackbar.LENGTH_LONG)
+                                    .setAction("Action", null).show();
 
-                        if (!item.getReleaseDate().isEmpty()) {
-                            try {
-                                textYear.setText(new SimpleDateFormat("yyyy").format(Utils.GetDateFormat("yyyy").parse(item.getReleaseDate())));
-                            } catch (ParseException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        if (!item.getOverview().isEmpty()) {
-                            textDescription.setText(item.getOverview());
-                        } else {
-                            textDescription.setText("Sin descripción.");
-                        }
-
-                        if (item.getVoteAverage() > 0) {
-                            ratingMovie.setRating(Float.parseFloat(item.getVoteAverage().toString()) * .5f);
-                        }
-                        if (item.getGenres().size() > 0){
-                            StringBuilder genres = new StringBuilder("");
-
-                            int count = 0;
-
-                            for (GetMovieDetailResponseData.Genre genre: item.getGenres())
-                            {
-                                count++;
-                                genres.append(genre.getName());
-
-                                if (count < item.getGenres().size()){
-                                    genres.append(",");
-                                }
-                            }
-
-                            textGenres.setText(genres);
+                            finish();
                         }
 
                         dialog.dismiss();
-                        GetTrailers(item.getId());
                     }
 
                     @Override
                     public void onFailure(Call<GetMovieDetailResponseData> call, Throwable t)
                     {
                         dialog.dismiss();
+                        Snackbar.make(getWindow().getDecorView().getRootView(), "Sin resultados.", Snackbar.LENGTH_LONG)
+                                .setAction("Aceptar", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        finish();
+                                    }
+                                }).show();
                     }
                 });
+    }
+
+    private void FillMovieData(GetMovieDetailResponseData itemMovie) {
+
+        getSupportActionBar().setTitle(itemMovie.getTitle());
+
+        if (!itemMovie.getPosterPath().isEmpty()) {
+            String urlMoviePoster = String.format("https://image.tmdb.org/t/p/w500/%s", itemMovie.getPosterPath());
+            Picasso.with(getApplicationContext()).load(urlMoviePoster).into(imageViewPoster);
+        } else {
+            imageViewPoster.setVisibility(View.INVISIBLE);
+        }
+
+        if (!itemMovie.getBackdropPath().isEmpty()) {
+            String urlMovieBack = String.format("https://image.tmdb.org/t/p/w500/%s", itemMovie.getBackdropPath());
+            Picasso.with(getApplicationContext()).load(urlMovieBack).into(imgToolbar);
+        }
+
+        if (!itemMovie.getTitle().isEmpty()) {
+            textTitle.setText(itemMovie.getTitle());
+        }
+
+        if (!itemMovie.getReleaseDate().isEmpty()) {
+            try {
+                textYear.setText(new SimpleDateFormat("yyyy").format(Utils.GetDateFormat("yyyy").parse(itemMovie.getReleaseDate())));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (!itemMovie.getOverview().isEmpty()) {
+            textDescription.setText(itemMovie.getOverview());
+        } else {
+            textDescription.setText("Sin descripción.");
+        }
+
+        if (itemMovie.getVoteAverage() > 0) {
+            ratingMovie.setRating(Float.parseFloat(itemMovie.getVoteAverage().toString()) * .5f);
+        }
+        if (itemMovie.getGenres().size() > 0){
+            StringBuilder genres = new StringBuilder("");
+
+            int count = 0;
+
+            for (GetMovieDetailResponseData.Genre genre: itemMovie.getGenres())
+            {
+                count++;
+                genres.append(genre.getName());
+
+                if (count < itemMovie.getGenres().size()){
+                    genres.append(",");
+                }
+            }
+
+            textGenres.setText(genres);
+        }
     }
 
     @Override
     public void onBackPressed() {
 
-        finish();
+        supportFinishAfterTransition();
     }
 
     @Override

@@ -3,10 +3,12 @@ package com.prueba.rappi.activities;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
+import android.view.View;
 import android.widget.ImageView;
 
 import com.google.gson.Gson;
@@ -14,11 +16,13 @@ import com.pixplicity.easyprefs.library.Prefs;
 import com.prueba.rappi.R;
 import com.takusemba.multisnaprecyclerview.MultiSnapRecyclerView;
 
+import java.util.Arrays;
+import java.util.List;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import adapters.FavoriteAdapter;
-import adapters.MoviesAdapter;
 import di.component.ApplicationComponent;
 import di.component.DaggerFavoriteActivityComponent;
 import di.component.FavoriteActivityComponent;
@@ -28,7 +32,6 @@ import di.qualifier.ApplicationContext;
 import dmax.dialog.SpotsDialog;
 import helpers.Utils;
 import interfaces.IServices;
-import models.GetFavoritesMoviesResponseData;
 import models.GetMovieResponseData;
 import models.GetResponseUserData;
 import retrofit2.Call;
@@ -77,6 +80,7 @@ public class FavoritesActivity extends AppCompatActivity implements FavoriteAdap
 
         favoriteActivityComponent.inject(this);
         gson = new Gson();
+
         dialog = new SpotsDialog.Builder()
                 .setContext(this)
                 .setMessage("Espere por favor....")
@@ -87,7 +91,16 @@ public class FavoritesActivity extends AppCompatActivity implements FavoriteAdap
         listFavorites.setLayoutManager(layoutManagerFavorites);
         listFavorites.setAdapter(favoriteAdapter);
 
-        GetFavorites();
+        if(Utils.isOnline(this)){
+
+            GetFavorites();
+
+        }else{
+
+            List<GetMovieResponseData.Result> favoritesMoviesOffline = Arrays.asList(gson.fromJson(Prefs.getString("FavoritesOffline", ""), GetMovieResponseData.Result[].class));
+            favoriteAdapter.setData(favoritesMoviesOffline);
+        }
+
     }
 
     private void GetFavorites()
@@ -103,6 +116,9 @@ public class FavoritesActivity extends AppCompatActivity implements FavoriteAdap
                         @Override
                         public void onResponse(Call<GetMovieResponseData> call, Response<GetMovieResponseData> response) {
                             favoriteAdapter.setData(response.body().getResults());
+
+                            Prefs.putString("FavoritesOffline", gson.toJson(response.body().getResults()));
+
                             dialog.dismiss();
                         }
 
@@ -110,6 +126,13 @@ public class FavoritesActivity extends AppCompatActivity implements FavoriteAdap
                         public void onFailure(Call<GetMovieResponseData> call, Throwable t)
                         {
                             dialog.dismiss();
+                            Snackbar.make(getWindow().getDecorView().getRootView(), "Sin resultados.", Snackbar.LENGTH_LONG)
+                                    .setAction("Aceptar", new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            finish();
+                                        }
+                                    }).show();
                         }
                     });
         }
@@ -131,11 +154,15 @@ public class FavoritesActivity extends AppCompatActivity implements FavoriteAdap
     @Override
     public void launchIntent(int movieId, ImageView movieImage) {
 
-        Intent intent = new Intent(this, MovieDetailActivity.class);
-        intent.putExtra("MovieId", movieId);
-        ActivityOptionsCompat options = ActivityOptionsCompat.
-                makeSceneTransitionAnimation(this, movieImage, "movieDetail");
-        startActivity(intent, options.toBundle());
-
+        if (Utils.isOnline(this)){
+            Intent intent = new Intent(this, MovieDetailActivity.class);
+            intent.putExtra("MovieId", movieId);
+            ActivityOptionsCompat options = ActivityOptionsCompat.
+                    makeSceneTransitionAnimation(this, movieImage, "movieDetail");
+            startActivity(intent, options.toBundle());
+        }else{
+            Snackbar.make(getWindow().getDecorView().getRootView(), "Sin conexión a internet.", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
     }
 }

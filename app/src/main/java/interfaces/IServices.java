@@ -1,7 +1,6 @@
 package interfaces;
 
 import models.GetAddFavoritesResponseData;
-import models.GetFavoritesMoviesResponseData;
 import models.GetMovieDetailResponseData;
 import models.GetMovieResponseData;
 import models.GetRequestTokenData;
@@ -46,12 +45,12 @@ public interface IServices {
     );
 
     @GET("search/movie")
-    Call<GetResponseUserData> searchMovie(
+    Call<GetMovieResponseData> searchMovie(
             @Query("api_key") String apiKey,
             @Query("language") String language,
             @Query("query") String query,
-            @Query("page") String page,
-            @Query("include_adult") String includeAdult
+            @Query("page") int page,
+            @Query("include_adult") boolean includeAdult
     );
 
     @POST("authentication/session/new")
